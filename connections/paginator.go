@@ -28,7 +28,7 @@ func (p *Paginator) CursorToOffset(cursor string) (int, error) {
 	str = strings.Replace(str, p.CursorPrefix, "", -1)
 	offset, err := strconv.Atoi(str)
 	if err != nil {
-		return 0, fmt.Errorf("Invalid cursor")
+		return 0, fmt.Errorf("invalid cursor %s: %s", cursor, err)
 	}
 	return offset, nil
 }

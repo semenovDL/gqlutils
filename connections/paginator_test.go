@@ -44,5 +44,5 @@ func TestConnections_Paginator_CursorToOffset_BadCursor(t *testing.T) {
 	p := connections.Paginator{}
 	value, err := p.CursorToOffset("M{==")
 	assert.Equal(t, 0, value)
-	assert.Contains(t, err.Error(), "Invalid cursor")
+	assert.Contains(t, err.Error(), "invalid cursor M{==")
 }
