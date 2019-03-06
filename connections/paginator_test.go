@@ -1,6 +1,8 @@
 package connections_test
 
 import (
+	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/semenovDL/gqlutils/connections"
@@ -14,35 +16,52 @@ type testCase struct {
 	err    error
 }
 
-var testCases = []testCase{
-	{"", -1, "LTE=", nil},
-	{"", 0, "MA==", nil},
-	{"", 1, "MQ==", nil},
-	{"", 2, "Mg==", nil},
-	{"", 100000, "MTAwMDAw", nil},
-	{"cursor:", 0, "Y3Vyc29yOjA=", nil},
-	{"cursor:", 1, "Y3Vyc29yOjE=", nil},
-}
-
 func TestConnections_Paginator_OffsetToCursor(t *testing.T) {
-	for _, c := range testCases {
-		p := connections.Paginator{CursorPrefix: c.prefix}
-		assert.Equal(t, c.cursor, p.OffsetToCursor(c.offset))
+	testCases := []testCase{
+		{"", 0, "MA==", nil},
+		{"", 1, "MQ==", nil},
+		{"", 2, "Mg==", nil},
+		{"", 100000, "MTAwMDAw", nil},
+		{"cursor:", 0, "Y3Vyc29yOjA=", nil},
+		{"cursor:", 1, "Y3Vyc29yOjE=", nil},
+		{"", -1, "", errors.New("negative offset -1")},
+		{"", -2, "", errors.New("negative offset -2")},
+	}
+	for _, tc := range testCases {
+		func(tc testCase) {
+			t.Run(fmt.Sprintf("%s %d", tc.prefix, tc.offset), func(t *testing.T) {
+				t.Parallel()
+				p := connections.Paginator{CursorPrefix: tc.prefix}
+				value, err := p.OffsetToCursor(tc.offset)
+				assert.Equal(t, tc.cursor, value)
+				assert.Equal(t, tc.err, err)
+			})
+		}(tc)
 	}
 }
 
 func TestConnections_Paginator_CursorToOffset(t *testing.T) {
-	for _, c := range testCases {
-		p := connections.Paginator{CursorPrefix: c.prefix}
-		value, err := p.CursorToOffset(c.cursor)
-		assert.Equal(t, c.offset, value)
-		assert.Equal(t, c.err, err)
+	testCases := []testCase{
+		{"", 0, "MA==", nil},
+		{"", 1, "MQ==", nil},
+		{"", 2, "Mg==", nil},
+		{"", 100000, "MTAwMDAw", nil},
+		{"cursor:", 0, "Y3Vyc29yOjA=", nil},
+		{"cursor:", 1, "Y3Vyc29yOjE=", nil},
+		{"", -1, "M{==", errors.New("can't decode cursor M{== from base64")},
+		{"", -1, "LTE=", errors.New("negative offset -1 in cursor LTE=")},
+		{"", -1, "LTI=", errors.New("negative offset -2 in cursor LTI=")},
+		{"", -1, "YWJj", errors.New("cursor YWJj is not a number")},
 	}
-}
-
-func TestConnections_Paginator_CursorToOffset_BadCursor(t *testing.T) {
-	p := connections.Paginator{}
-	value, err := p.CursorToOffset("M{==")
-	assert.Equal(t, 0, value)
-	assert.Contains(t, err.Error(), "invalid cursor M{==")
+	for _, tc := range testCases {
+		func(tc testCase) {
+			t.Run(fmt.Sprintf("%s %s", tc.prefix, tc.cursor), func(t *testing.T) {
+				t.Parallel()
+				p := connections.Paginator{CursorPrefix: tc.prefix}
+				value, err := p.CursorToOffset(tc.cursor)
+				assert.Equal(t, tc.offset, value)
+				assert.Equal(t, tc.err, err)
+			})
+		}(tc)
+	}
 }
