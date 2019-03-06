@@ -17,8 +17,13 @@ func (p *Paginator) OffsetToCursor(offset int) (string, error) {
 	if offset < 0 {
 		return "", fmt.Errorf("negative offset %d", offset)
 	}
+	return p.UOffsetToCursor(uint(offset)), nil
+}
+
+// UOffsetToCursor creates the cursor string from an uint offset
+func (p *Paginator) UOffsetToCursor(offset uint) string {
 	str := fmt.Sprintf("%v%v", p.CursorPrefix, offset)
-	return base64.StdEncoding.EncodeToString([]byte(str)), nil
+	return base64.StdEncoding.EncodeToString([]byte(str))
 }
 
 // CursorToOffset re-derives the offset from the cursor string.
